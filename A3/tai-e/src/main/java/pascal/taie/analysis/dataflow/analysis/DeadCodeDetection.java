@@ -33,21 +33,13 @@ import pascal.taie.analysis.graph.cfg.CFGBuilder;
 import pascal.taie.analysis.graph.cfg.Edge;
 import pascal.taie.config.AnalysisConfig;
 import pascal.taie.ir.IR;
-import pascal.taie.ir.exp.ArithmeticExp;
-import pascal.taie.ir.exp.ArrayAccess;
-import pascal.taie.ir.exp.CastExp;
-import pascal.taie.ir.exp.FieldAccess;
-import pascal.taie.ir.exp.NewExp;
-import pascal.taie.ir.exp.RValue;
-import pascal.taie.ir.exp.Var;
+import pascal.taie.ir.exp.*;
 import pascal.taie.ir.stmt.AssignStmt;
 import pascal.taie.ir.stmt.If;
 import pascal.taie.ir.stmt.Stmt;
 import pascal.taie.ir.stmt.SwitchStmt;
 
-import java.util.Comparator;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class DeadCodeDetection extends MethodAnalysis {
 
@@ -69,8 +61,125 @@ public class DeadCodeDetection extends MethodAnalysis {
                 ir.getResult(LiveVariableAnalysis.ID);
         // keep statements (dead code) sorted in the resulting set
         Set<Stmt> deadCode = new TreeSet<>(Comparator.comparing(Stmt::getIndex));
-        // TODO - finish me
+        Set<Stmt> liveCode = new TreeSet<>(Comparator.comparing(Stmt::getIndex));
+
+        Queue<Stmt> stmtQueue = new LinkedList<>();
+
+//        synchronized (System.out) {
+//
+//            System.out.println("+++++++++++++++++++++");
+//            for (Stmt e : cfg) {
+//                System.out.println(e);
+//            }
+//            System.out.println("=====================");
+//            for (Stmt e : cfg.getIR().getStmts()) {
+//                System.out.println(e);
+//            }
+//            System.out.println("+++++++++++++++++++++");
+//
+//        }
+
         // Your task is to recognize dead code in ir and add it to deadCode
+        stmtQueue.add(cfg.getEntry());
+        while (!stmtQueue.isEmpty()) {
+            Stmt stmt = stmtQueue.poll();
+//            System.out.println("Parsing Stmt: " + stmt);
+            if (cfg.isExit(stmt)) {
+                liveCode.add(stmt);
+                continue;
+            }
+            if (deadCode.contains(stmt) || liveCode.contains(stmt)) {
+                continue;
+            }
+
+            if (stmt instanceof AssignStmt<?,?>) {
+//                System.out.println("ASSIGNSTMT: " + stmt);
+//                System.out.println(liveVars.getOutFact(stmt));
+                if (liveVars.getOutFact(stmt).contains((Var)((AssignStmt<?, ?>) stmt).getLValue())) {
+//                    System.out.println("Add livecode: " + stmt);
+                    liveCode.add(stmt);
+                }
+                else {
+                    if (hasNoSideEffect(((AssignStmt<?, ?>) stmt).getRValue())) {
+                        deadCode.add(stmt);
+                    }
+                    else {
+                        liveCode.add(stmt);
+                    }
+                }
+                stmtQueue.addAll(cfg.getSuccsOf(stmt));
+            }
+            else if (stmt instanceof If) {
+                liveCode.add(stmt);
+
+                Value condition_value = ConstantPropagation.evaluate(((If) stmt).getCondition(),
+                        constants.getOutFact(stmt));
+                if (condition_value.isConstant()) {
+                    if (condition_value.getConstant() == 0) {
+                        // Mark the If-False block as live code
+                        for (Edge<Stmt> e : cfg.getOutEdgesOf(stmt)) {
+                            if (e.getKind() == Edge.Kind.IF_FALSE) {
+//                                System.out.println("==>" + stmt);
+                                stmtQueue.add(e.getTarget());
+//                                break;
+                            }
+                        }
+                    }
+                    else {
+                        // Mark the If-True block as live code
+                        for (Edge<Stmt> e : cfg.getOutEdgesOf(stmt)) {
+                            if (e.getKind() == Edge.Kind.IF_TRUE) {
+//                                System.out.println("==>" + stmt);
+                                stmtQueue.add(e.getTarget());
+//                                break;
+                            }
+                        }
+                    }
+                }
+                else {
+                    for (Edge<Stmt> e : cfg.getOutEdgesOf(stmt)) {
+//                        System.out.println("==>" + stmt);
+                        stmtQueue.add(e.getTarget());
+                    }
+                }
+            }
+            else if (stmt instanceof SwitchStmt) {
+                liveCode.add(stmt);
+
+                Value condition_value = constants.getOutFact(stmt).get(((SwitchStmt) stmt).getVar());
+                if (condition_value.isConstant()) {
+                    if (((SwitchStmt) stmt).getCaseValues().contains(condition_value.getConstant())) {
+                        for (Edge<Stmt> e : cfg.getOutEdgesOf(stmt)) {
+                            if (e.isSwitchCase() && e.getCaseValue() == condition_value.getConstant()) {
+//                            System.out.println("==>" + stmt);
+                                stmtQueue.add(e.getTarget());
+//                            break;
+                            }
+                        }
+                    }
+                    else {
+//                        System.out.println("==>" + stmt);
+                        stmtQueue.add(((SwitchStmt) stmt).getDefaultTarget());
+                    }
+                }
+                else {
+                    stmtQueue.addAll(cfg.getSuccsOf(stmt));
+                }
+            }
+            else {
+                liveCode.add(stmt);
+                stmtQueue.addAll(cfg.getSuccsOf(stmt));
+            }
+        }
+
+        for (Stmt s : cfg.getIR().getStmts()) {
+//        for (Stmt s : cfg) {
+            if (!liveCode.contains(s)) {
+                deadCode.add(s);
+            }
+        }
+
+
         return deadCode;
     }
 
