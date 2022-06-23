@@ -1,0 +1,52 @@
+-------------------- <Switch: void <init>()> (constprop) --------------------
+[0@L1] invokespecial %this.<java.lang.Object: void <init>()>(); {}
+[1@L1] return; {}
+
+-------------------- <Switch: void int switch1(int,int)> (constprop) --------------------
+[0@L3] a = 0; {a=0, x=NAC, y=NAC}
+[1@L4] goto 18; {a=0, x=NAC, y=NAC}
+[2@L4] nop; {a=0, x=NAC, y=NAC}
+[3@L6] a = a - y; {a=NAC, x=NAC, y=NAC}
+[4@L7] goto 21; {a=NAC, x=NAC, y=NAC}
+[5@L7] nop; {a=0, x=NAC, y=NAC}
+[6@L9] a = a + y; {a=NAC, x=NAC, y=NAC}
+[7@L10] goto 21; {a=NAC, x=NAC, y=NAC}
+[8@L10] nop; {a=0, x=NAC, y=NAC}
+[9@L12] a = a * y; {a=NAC, x=NAC, y=NAC}
+[10@L13] goto 21; {a=NAC, x=NAC, y=NAC}
+[11@L13] nop; {a=0, x=NAC, y=NAC}
+[12@L15] a = a / y; {a=NAC, x=NAC, y=NAC}
+[13@L16] goto 21; {a=NAC, x=NAC, y=NAC}
+[14@L16] nop; {a=0, x=NAC, y=NAC}
+[15@L18] %intconst0 = 1; {%intconst0=1, a=0, x=NAC, y=NAC}
+[16@L18] a = a - %intconst0; {%intconst0=1, a=-1, x=NAC, y=NAC}
+[17@L4] goto 21; {%intconst0=1, a=-1, x=NAC, y=NAC}
+[18@L4] nop; {a=0, x=NAC, y=NAC}
+[19@L4] nop; {a=0, x=NAC, y=NAC}
+[20@L4] tableswitch (x) {1->2, 2->5, 3->8, 4->11, default->14}; {a=0, x=NAC, y=NAC}
+[21@L4] nop; {%intconst0=1, a=NAC, x=NAC, y=NAC}
+[22@L20] a = a + x; {%intconst0=1, a=NAC, x=NAC, y=NAC}
+[23@L21] return a; {%intconst0=1, a=NAC, x=NAC, y=NAC}
+-------------------- <Switch: void int switch2(int,int)> (constprop) --------------------
+[0@L25] a = 0; {a=0, x=NAC, y=NAC}
+[1@L26] goto 16; {a=0, x=NAC, y=NAC}
+[2@L26] nop; {a=0, x=NAC, y=NAC}
+[3@L28] a = a - y; {a=NAC, x=NAC, y=NAC}
+[4@L29] goto 19; {a=NAC, x=NAC, y=NAC}
+[5@L29] nop; {a=0, x=NAC, y=NAC}
+[6@L31] a = a + y; {a=NAC, x=NAC, y=NAC}
+[7@L31] nop; {a=NAC, x=NAC, y=NAC}
+[8@L33] a = a * y; {a=NAC, x=NAC, y=NAC}
+[9@L33] nop; {a=NAC, x=NAC, y=NAC}
+[10@L35] a = a / y; {a=NAC, x=NAC, y=NAC}
+[11@L36] goto 19; {a=NAC, x=NAC, y=NAC}
+[12@L36] nop; {a=0, x=NAC, y=NAC}
+[13@L38] %intconst0 = 1; {%intconst0=1, a=0, x=NAC, y=NAC}
+[14@L38] a = a - %intconst0; {%intconst0=1, a=-1, x=NAC, y=NAC}
+[15@L26] goto 19; {%intconst0=1, a=-1, x=NAC, y=NAC}
+[16@L26] nop; {a=0, x=NAC, y=NAC}
+[17@L26] nop; {a=0, x=NAC, y=NAC}
+[18@L26] tableswitch (x) {1->2, 2->5, 3->7, 4->9, default->12}; {a=0, x=NAC, y=NAC}
+[19@L26] nop; {%intconst0=1, a=NAC, x=NAC, y=NAC}
+[20@L40] a = a + x; {%intconst0=1, a=NAC, x=NAC, y=NAC}
+[21@L41] return a; {%intconst0=1, a=NAC, x=NAC, y=NAC}

@@ -66,4 +66,9 @@ public class CPTest {
     public void testInterprocedural() {
         testCP("Interprocedural");
     }
+
+    @Test
+    public void testSwitch() {
+        testCP("Switch");
+    }
 }
