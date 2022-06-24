@@ -140,9 +140,6 @@ public class ConstantPropagation extends
         if (exp instanceof Var) {
             return in.get((Var) exp);
         }
-        if (exp instanceof InvokeExp) {
-            return Value.getNAC();
-        }
 
         Value result = Value.getNAC();
 
