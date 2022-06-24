@@ -22,6 +22,7 @@
 
 package pascal.taie.analysis.graph.callgraph;
 
+import org.checkerframework.checker.units.qual.A;
 import pascal.taie.World;
 import pascal.taie.ir.proginfo.MethodRef;
 import pascal.taie.ir.stmt.Invoke;
@@ -49,7 +50,25 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
     private CallGraph<Invoke, JMethod> buildCallGraph(JMethod entry) {
         DefaultCallGraph callGraph = new DefaultCallGraph();
         callGraph.addEntryMethod(entry);
-        // TODO - finish me
+
+        Queue<JMethod> methodQueue = new ArrayDeque<>();
+        methodQueue.add(entry);
+        while (!methodQueue.isEmpty()) {
+            JMethod jm = methodQueue.poll();
+            if (callGraph.reachableMethods().noneMatch(m -> m.equals(jm))) {
+                callGraph.addReachableMethod(jm);
+                callGraph.callSitesIn(jm).forEach(
+                        cs -> {
+                            Set<JMethod> T = resolve(cs);
+                            for (JMethod mm : T) {
+                                callGraph.addEdge(new Edge<>(CallGraphs.getCallKind(cs), cs, mm));
+                                methodQueue.add(mm);
+                            }
+                        }
+                );
+            }
+        }
+        
         return callGraph;
     }
 
@@ -84,7 +103,7 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
                 classQueue.addAll(hierarchy.getDirectSubinterfacesOf(jClass));
             }
         }
-        
+
         return set;
     }
 
