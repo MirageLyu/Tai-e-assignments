@@ -65,20 +65,6 @@ public class DeadCodeDetection extends MethodAnalysis {
 
         Queue<Stmt> stmtQueue = new LinkedList<>();
 
-//        synchronized (System.out) {
-//
-//            System.out.println("+++++++++++++++++++++");
-//            for (Stmt e : cfg) {
-//                System.out.println(e);
-//            }
-//            System.out.println("=====================");
-//            for (Stmt e : cfg.getIR().getStmts()) {
-//                System.out.println(e);
-//            }
-//            System.out.println("+++++++++++++++++++++");
-//
-//        }
-
         // Your task is to recognize dead code in ir and add it to deadCode
         stmtQueue.add(cfg.getEntry());
         while (!stmtQueue.isEmpty()) {
@@ -92,28 +78,35 @@ public class DeadCodeDetection extends MethodAnalysis {
                 continue;
             }
 
-            if (stmt instanceof AssignStmt<?,?>) {
+            if (stmt instanceof AssignStmt<?,?> assignStmt) {
 //                System.out.println("ASSIGNSTMT: " + stmt);
 //                System.out.println(liveVars.getOutFact(stmt));
-                if (liveVars.getOutFact(stmt).contains((Var)((AssignStmt<?, ?>) stmt).getLValue())) {
-//                    System.out.println("Add livecode: " + stmt);
-                    liveCode.add(stmt);
+                if (hasNoSideEffect(assignStmt.getRValue()) && assignStmt.getLValue() instanceof Var lVar &&
+                        !liveVars.getOutFact(assignStmt).contains(lVar)){
+                    deadCode.add(stmt);
                 }
                 else {
-                    if (hasNoSideEffect(((AssignStmt<?, ?>) stmt).getRValue())) {
-                        deadCode.add(stmt);
-                    }
-                    else {
-                        liveCode.add(stmt);
-                    }
+                    liveCode.add(stmt);
                 }
+//                if (liveVars.getOutFact(stmt).contains((Var)((AssignStmt<?, ?>) stmt).getLValue())) {
+////                    System.out.println("Add livecode: " + stmt);
+//                    liveCode.add(stmt);
+//                }
+//                else {
+//                    if (hasNoSideEffect(((AssignStmt<?, ?>) stmt).getRValue())) {
+//                        deadCode.add(stmt);
+//                    }
+//                    else {
+//                        liveCode.add(stmt);
+//                    }
+//                }
                 stmtQueue.addAll(cfg.getSuccsOf(stmt));
             }
             else if (stmt instanceof If) {
                 liveCode.add(stmt);
 
                 Value condition_value = ConstantPropagation.evaluate(((If) stmt).getCondition(),
-                        constants.getOutFact(stmt));
+                        constants.getInFact(stmt));
                 if (condition_value.isConstant()) {
                     if (condition_value.getConstant() == 0) {
                         // Mark the If-False block as live code
@@ -121,7 +114,7 @@ public class DeadCodeDetection extends MethodAnalysis {
                             if (e.getKind() == Edge.Kind.IF_FALSE) {
 //                                System.out.println("==>" + stmt);
                                 stmtQueue.add(e.getTarget());
-//                                break;
+                                break;
                             }
                         }
                     }
@@ -131,22 +124,21 @@ public class DeadCodeDetection extends MethodAnalysis {
                             if (e.getKind() == Edge.Kind.IF_TRUE) {
 //                                System.out.println("==>" + stmt);
                                 stmtQueue.add(e.getTarget());
-//                                break;
+                                break;
                             }
                         }
                     }
                 }
                 else {
-                    for (Edge<Stmt> e : cfg.getOutEdgesOf(stmt)) {
-//                        System.out.println("==>" + stmt);
-                        stmtQueue.add(e.getTarget());
-                    }
+                    //                        System.out.println("==>" + stmt);
+                    stmtQueue.addAll(cfg.getSuccsOf(stmt));
                 }
             }
             else if (stmt instanceof SwitchStmt) {
                 liveCode.add(stmt);
 
-                Value condition_value = constants.getOutFact(stmt).get(((SwitchStmt) stmt).getVar());
+                Value condition_value = ConstantPropagation.evaluate(((SwitchStmt) stmt).getVar(),
+                        constants.getInFact(stmt));
                 if (condition_value.isConstant()) {
                     if (((SwitchStmt) stmt).getCaseValues().contains(condition_value.getConstant())) {
                         for (Edge<Stmt> e : cfg.getOutEdgesOf(stmt)) {
@@ -179,7 +171,8 @@ public class DeadCodeDetection extends MethodAnalysis {
             }
         }
 
-
+        deadCode.remove(cfg.getEntry());
+        deadCode.remove(cfg.getExit());
         return deadCode;
     }
 
