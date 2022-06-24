@@ -25,14 +25,13 @@ package pascal.taie.analysis.graph.callgraph;
 import pascal.taie.World;
 import pascal.taie.ir.proginfo.MethodRef;
 import pascal.taie.ir.stmt.Invoke;
+import pascal.taie.ir.stmt.Stmt;
 import pascal.taie.language.classes.ClassHierarchy;
 import pascal.taie.language.classes.JClass;
 import pascal.taie.language.classes.JMethod;
 import pascal.taie.language.classes.Subsignature;
 
-import java.util.ArrayDeque;
-import java.util.Queue;
-import java.util.Set;
+import java.util.*;
 
 /**
  * Implementation of the CHA algorithm.
@@ -58,8 +57,35 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
      * Resolves call targets (callees) of a call site via CHA.
      */
     private Set<JMethod> resolve(Invoke callSite) {
-        // TODO - finish me
-        return null;
+        Set<JMethod> set = new HashSet<>();
+
+        if (callSite.isStatic()) {
+            set.add(callSite.getContainer());
+        }
+        else if (callSite.isSpecial()) {
+            JClass cm = callSite.getContainer().getDeclaringClass();
+            JMethod m = dispatch(cm, callSite.getMethodRef().getSubsignature());
+            if (m != null) {
+                set.add(m);
+            }
+        }
+        else if (callSite.isVirtual()) {
+            JClass receiver = callSite.getContainer().getDeclaringClass();
+            Queue<JClass> classQueue = new ArrayDeque<>();
+            classQueue.add(receiver);
+            while (!classQueue.isEmpty()) {
+                JClass jClass = classQueue.poll();
+                JMethod m = dispatch(jClass, callSite.getMethodRef().getSubsignature());
+                if (m != null) {
+                    set.add(m);
+                }
+                classQueue.addAll(hierarchy.getDirectImplementorsOf(jClass));
+                classQueue.addAll(hierarchy.getDirectSubclassesOf(jClass));
+                classQueue.addAll(hierarchy.getDirectSubinterfacesOf(jClass));
+            }
+        }
+        
+        return set;
     }
 
     /**
