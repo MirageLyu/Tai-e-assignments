@@ -69,7 +69,13 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
      * can be found.
      */
     private JMethod dispatch(JClass jclass, Subsignature subsignature) {
-        // TODO - finish me
+        if (jclass != null && !jclass.isInterface()) {
+            JMethod jm = jclass.getDeclaredMethod(subsignature);
+            if (jm != null && !jm.isAbstract()) {
+                return jm;
+            }
+            return dispatch(jclass.getSuperClass(), subsignature);
+        }
         return null;
     }
 }
