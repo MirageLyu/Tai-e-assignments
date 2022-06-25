@@ -68,7 +68,7 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
                 );
             }
         }
-        
+
         return callGraph;
     }
 
@@ -79,17 +79,18 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
         Set<JMethod> set = new HashSet<>();
 
         if (callSite.isStatic()) {
-            set.add(callSite.getContainer());
+            set.add(callSite.getMethodRef().getDeclaringClass().getDeclaredMethod(
+                    callSite.getMethodRef().getSubsignature()));
         }
         else if (callSite.isSpecial()) {
-            JClass cm = callSite.getContainer().getDeclaringClass();
+            JClass cm = callSite.getMethodRef().getDeclaringClass();
             JMethod m = dispatch(cm, callSite.getMethodRef().getSubsignature());
             if (m != null) {
                 set.add(m);
             }
         }
-        else if (callSite.isVirtual()) {
-            JClass receiver = callSite.getContainer().getDeclaringClass();
+        else if (callSite.isVirtual() || callSite.isInterface()) {
+            JClass receiver = callSite.getMethodRef().getDeclaringClass();
             Queue<JClass> classQueue = new ArrayDeque<>();
             classQueue.add(receiver);
             while (!classQueue.isEmpty()) {
@@ -114,7 +115,7 @@ class CHABuilder implements CGBuilder<Invoke, JMethod> {
      * can be found.
      */
     private JMethod dispatch(JClass jclass, Subsignature subsignature) {
-        if (jclass != null && !jclass.isInterface()) {
+        if (jclass != null) {
             JMethod jm = jclass.getDeclaredMethod(subsignature);
             if (jm != null && !jm.isAbstract()) {
                 return jm;
