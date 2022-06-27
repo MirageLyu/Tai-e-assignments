@@ -74,7 +74,7 @@ class InterSolver<Method, Node, Fact> {
 
     private void doSolve() {
         workList = new ArrayDeque<>();
-        
+
         for (Node node : icfg) {
             workList.add(node);
         }
